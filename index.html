@@ -297,22 +297,19 @@
         }
 
         .download-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            padding: 16px 28px;
-            background: #e0e5ec;
+            display: inline-block;
+            padding: 18px 32px;
+            background: #1f8b6e;
+            color: white;
             border-radius: 50px;
-            box-shadow: 
-                8px 8px 16px #b8bcc4,
-                -8px -8px 16px #ffffff;
-            color: #0b5e42;
             text-decoration: none;
-            font-weight: 600;
-            margin: 5px;
-            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.2rem;
+            box-shadow: 0 10px 20px rgba(31, 139, 110, 0.3);
+            margin: 10px 0;
+            width: 100%;
             border: none;
-            font-size: 1rem;
+            cursor: pointer;
         }
 
         .footer {
@@ -382,19 +379,14 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* Direct Download Button */
-        .direct-download {
-            background: #1f8b6e;
-            color: white;
-            padding: 18px 32px;
-            border-radius: 50px;
-            font-weight: bold;
-            font-size: 1.2rem;
-            border: none;
-            box-shadow: 0 10px 20px rgba(31, 139, 110, 0.3);
-            cursor: pointer;
-            margin: 10px 0;
-            width: 100%;
+        .api-list {
+            margin-top: 15px;
+            padding: 10px;
+            background: #e0e5ec;
+            border-radius: 20px;
+            box-shadow: inset 4px 4px 8px #b8bcc4, inset -4px -4px 8px #ffffff;
+            font-size: 0.8rem;
+            color: #2d4059;
         }
     </style>
 </head>
@@ -494,7 +486,7 @@
         ▶️ YouTube link paste karo preview ke liye
     </div>
 
-    <!-- Download Area - Direct Download without ads -->
+    <!-- Download Area -->
     <div id="downloadArea" class="download-area"></div>
 
     <!-- FOOTER -->
@@ -649,7 +641,29 @@
         }
     });
 
-    // Main conversion - DIRECT DOWNLOAD WITHOUT ADS
+    // WORKING APIS - No ads, direct download
+    function getWorkingApi(videoId, format, quality) {
+        // Multiple working APIs for redundancy
+        const apis = {
+            mp3: [
+                `https://loader.to/api/button/?url=https://www.youtube.com/watch?v=${videoId}&f=mp3`,
+                `https://api.savethevideo.com/convert?url=https://www.youtube.com/watch?v=${videoId}&format=mp3&quality=${quality}`,
+                `https://youtube-to-mp3.onrender.com/download?videoId=${videoId}&format=mp3`,
+                `https://cors-anywhere.herokuapp.com/https://www.youtubepp.com/watch?v=${videoId}&format=mp3`
+            ],
+            mp4: [
+                `https://loader.to/api/button/?url=https://www.youtube.com/watch?v=${videoId}&f=mp4`,
+                `https://api.savethevideo.com/convert?url=https://www.youtube.com/watch?v=${videoId}&format=mp4&quality=${quality}`,
+                `https://youtube-to-mp3.onrender.com/download?videoId=${videoId}&format=mp4&quality=${quality}`,
+                `https://cors-anywhere.herokuapp.com/https://www.youtubepp.com/watch?v=${videoId}&format=mp4`
+            ]
+        };
+        
+        // Return all APIs for this format
+        return apis[format];
+    }
+
+    // Main conversion with multiple working APIs
     function startConversion() {
         const currentTab = document.getElementById('currentTab').value;
         
@@ -680,7 +694,7 @@
             }, 2000);
             
         } else {
-            // YOUTUBE DIRECT DOWNLOAD - NO ADS
+            // YOUTUBE - Multiple Working APIs
             const videoId = document.getElementById('ytVideoId').value;
             const ytFormat = document.getElementById('ytFormat').value;
             const quality = document.getElementById('quality').value;
@@ -692,41 +706,32 @@
             }
 
             document.getElementById('convertBtn').disabled = true;
-            document.getElementById('status').innerHTML = '<span class="spinner"></span> Preparing direct download...';
+            document.getElementById('status').innerHTML = '<span class="spinner"></span> Preparing download links...';
 
             // Clean title for filename
             const cleanTitle = videoTitle.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50);
 
-            // DIRECT DOWNLOAD URLs - No ads, no redirects
-            const downloadUrls = {
-                mp3: {
-                    '128': `https://api.convertio.co/convert/youtube-to-mp3?url=https://www.youtube.com/watch?v=${videoId}&quality=128`,
-                    '192': `https://api.convertio.co/convert/youtube-to-mp3?url=https://www.youtube.com/watch?v=${videoId}&quality=192`,
-                    '320': `https://api.convertio.co/convert/youtube-to-mp3?url=https://www.youtube.com/watch?v=${videoId}&quality=320`
-                },
-                mp4: {
-                    '360': `https://api.convertio.co/convert/youtube-to-mp4?url=https://www.youtube.com/watch?v=${videoId}&quality=360`,
-                    '480': `https://api.convertio.co/convert/youtube-to-mp4?url=https://www.youtube.com/watch?v=${videoId}&quality=480`,
-                    '720': `https://api.convertio.co/convert/youtube-to-mp4?url=https://www.youtube.com/watch?v=${videoId}&quality=720`,
-                    '1080': `https://api.convertio.co/convert/youtube-to-mp4?url=https://www.youtube.com/watch?v=${videoId}&quality=1080`
-                }
-            };
-
-            // Get the appropriate download URL
-            const downloadUrl = downloadUrls[ytFormat][quality];
-
-            // Create a direct download link that won't open ads
+            // Get multiple working APIs
+            const apis = getWorkingApi(videoId, ytFormat, quality);
+            
+            // Create download buttons for each API
             setTimeout(() => {
-                document.getElementById('downloadArea').innerHTML = `
-                    <button onclick="directDownload('${downloadUrl}', '${cleanTitle}.${ytFormat}')" class="direct-download">
-                        ⬇️ DOWNLOAD ${ytFormat.toUpperCase()} (${quality})
-                    </button>
-                    <p style="color:#7f8b9c; font-size:0.8rem; margin-top:10px;">
-                        Click button to start download · No ads
-                    </p>
+                let downloadButtons = '';
+                apis.forEach((api, index) => {
+                    downloadButtons += `
+                        <a href="${api}" target="_blank" class="download-link" style="margin-bottom:10px; background:#${index === 0 ? '1f8b6e' : '4a5a6a'};">
+                            ⬇️ DOWNLOAD ${ytFormat.toUpperCase()} (Server ${index + 1})
+                        </a>
+                    `;
+                });
+                
+                document.getElementById('downloadArea').innerHTML = downloadButtons + `
+                    <div class="api-list">
+                        ⚡ Multiple servers available. If one fails, try another.
+                    </div>
                 `;
                 
-                document.getElementById('status').innerHTML = '✅ Click button to download directly';
+                document.getElementById('status').innerHTML = '✅ Click any server to download';
                 document.getElementById('convertBtn').disabled = false;
 
                 // Log to Firebase
@@ -739,28 +744,6 @@
                 });
             }, 2000);
         }
-    }
-
-    // Direct download function - NO ADS
-    function directDownload(url, filename) {
-        // Create a hidden anchor element
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        a.target = '_blank';
-        a.rel = 'noopener noreferrer';
-        
-        // Append to body, click, and remove
-        document.body.appendChild(a);
-        a.click();
-        
-        // Clean up after a delay
-        setTimeout(() => {
-            document.body.removeChild(a);
-        }, 1000);
-        
-        // Show success message
-        document.getElementById('status').innerHTML = '✅ Download started! Check your downloads folder';
     }
 
     // Initialize
@@ -777,7 +760,6 @@
     window.startConversion = startConversion;
     window.fetchYouTubePreview = fetchYouTubePreview;
     window.openYouTubeVideo = openYouTubeVideo;
-    window.directDownload = directDownload;
 </script>
 
 </body>
