@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIDEO TO MP3/MP4 · Ziddi Hacks</title>
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: #e0e5ec;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        /* NEUMORPHISM */
+        .neo-card {
+            background: #e0e5ec;
+            border-radius: 48px;
+            box-shadow: 
+                20px 20px 40px #b8bcc4,
+                -20px -20px 40px #ffffff;
+            padding: 36px 28px;
+            width: 100%;
+            max-width: 600px;
+            transition: 0.2s;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(224, 229, 236, 0.9);
+            backdrop-filter: blur(6px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .popup {
+            background: #e0e5ec;
+            border-radius: 40px;
+            box-shadow: 
+                20px 20px 40px #b8bcc4,
+                -20px -20px 40px #ffffff;
+            padding: 32px 24px;
+            width: 320px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #2d4059;
+            text-shadow: 3px 3px 6px #b8bcc4, -3px -3px 6px #ffffff;
+            margin-bottom: 8px;
+        }
+
+        .subhead {
+            color: #4a5a6a;
+            font-size: 1rem;
+            margin-bottom: 28px;
+            text-shadow: 1px 1px 0 #ffffff;
+        }
+
+        /* TAB SELECTOR */
+        .tab-container {
+            display: flex;
+            gap: 12px;
+            margin: 20px 0;
+            background: #e0e5ec;
+            border-radius: 50px;
+            padding: 6px;
+            box-shadow: 
+                inset 5px 5px 10px #b8bcc4,
+                inset -5px -5px 10px #ffffff;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 14px 10px;
+            border: none;
+            background: transparent;
+            border-radius: 40px;
+            font-weight: 700;
+            font-size: 1rem;
+            color: #4a5a6a;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+
+        .tab.active {
+            background: #e0e5ec;
+            box-shadow: 
+                8px 8px 16px #b8bcc4,
+                -8px -8px 16px #ffffff;
+            color: #1f8b6e;
+        }
+
+        /* SECTIONS */
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .input-box {
+            width: 100%;
+            padding: 18px 22px;
+            border: none;
+            border-radius: 50px;
+            background: #e0e5ec;
+            box-shadow: 
+                inset 8px 8px 16px #b8bcc4,
+                inset -8px -8px 16px #ffffff;
+            font-size: 1rem;
+            color: #1e3c5c;
+            font-weight: 500;
+            outline: none;
+            margin-bottom: 20px;
+        }
+
+        /* GALLERY UPLOAD */
+        .upload-area {
+            background: #e0e5ec;
+            border-radius: 40px;
+            padding: 30px 20px;
+            margin: 20px 0;
+            box-shadow: 
+                inset 10px 10px 20px #b8bcc4,
+                inset -10px -10px 20px #ffffff;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .upload-area:hover {
+            box-shadow: 
+                8px 8px 16px #b8bcc4,
+                -8px -8px 16px #ffffff;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            color: #1f8b6e;
+        }
+
+        .upload-text {
+            font-weight: 600;
+            color: #2d4059;
+            margin-bottom: 5px;
+        }
+
+        .upload-hint {
+            font-size: 0.8rem;
+            color: #7f8b9c;
+        }
+
+        #fileInfo {
+            margin: 15px 0;
+            padding: 12px;
+            background: #e0e5ec;
+            border-radius: 30px;
+            box-shadow: 
+                inset 4px 4px 8px #b8bcc4,
+                inset -4px -4px 8px #ffffff;
+            color: #1f8b6e;
+            font-weight: 500;
+        }
+
+        /* VIDEO PREVIEW */
+        .video-preview {
+            width: 100%;
+            border-radius: 30px;
+            margin: 15px 0;
+            box-shadow: 
+                10px 10px 20px #b8bcc4,
+                -10px -10px 20px #ffffff;
+            display: none;
+        }
+
+        /* YOUTUBE PREVIEW */
+        .yt-preview-container {
+            margin: 20px 0;
+            display: none;
+        }
+
+        .yt-thumbnail {
+            width: 100%;
+            border-radius: 30px;
+            box-shadow: 
+                10px 10px 20px #b8bcc4,
+                -10px -10px 20px #ffffff;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .yt-thumbnail:hover {
+            transform: scale(1.02);
+        }
+
+        .video-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 12px;
+            padding: 12px;
+            background: #e0e5ec;
+            border-radius: 30px;
+            box-shadow: 
+                inset 4px 4px 8px #b8bcc4,
+                inset -4px -4px 8px #ffffff;
+        }
+
+        .video-title {
+            font-weight: 600;
+            color: #2d4059;
+            font-size: 0.9rem;
+        }
+
+        .video-duration {
+            color: #1f8b6e;
+            font-size: 0.8rem;
+        }
+
+        /* FORMAT TOGGLE */
+        .format-toggle {
+            display: flex;
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .format-btn {
+            flex: 1;
+            background: #e0e5ec;
+            border: none;
+            padding: 14px;
+            border-radius: 40px;
+            box-shadow: 
+                8px 8px 16px #b8bcc4,
+                -8px -8px 16px #ffffff;
+            font-weight: 600;
+            color: #2d4059;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+
+        .format-btn.active {
+            box-shadow: 
+                inset 6px 6px 12px #b8bcc4,
+                inset -6px -6px 12px #ffffff;
+            color: #1f8b6e;
+        }
+
+        /* QUALITY BUTTONS */
+        .quality-row {
+            display: flex;
+            gap: 12px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .quality-btn {
+            flex: 1;
+            min-width: 80px;
+            background: #e0e5ec;
+            border: none;
+            padding: 14px 8px;
+            border-radius: 40px;
+            box-shadow: 
+                8px 8px 16px #b8bcc4,
+                -8px -8px 16px #ffffff;
+            font-weight: 600;
+            color: #2d4059;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+
+        .quality-btn.active {
+            box-shadow: 
+                inset 6px 6px 12px #b8bcc4,
+                inset -6px -6px 12px #ffffff;
+            color: #1f8b6e;
+        }
+
+        /* MAIN BUTTON */
+        .main-btn {
+            background: #e0e5ec;
+            border: none;
+            padding: 18px 28px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: #0f4c3a;
+            width: 100%;
+            box-shadow: 
+                12px 12px 24px #b8bcc4,
+                -12px -12px 24px #ffffff;
+            cursor: pointer;
+            transition: 0.15s;
+            margin: 20px 0 16px;
+        }
+
+        .main-btn:active {
+            box-shadow: 
+                inset 10px 10px 20px #b8bcc4,
+                inset -10px -10px 20px #ffffff;
+        }
+
+        .main-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* STATUS */
+        .status-box {
+            background: #e0e5ec;
+            border-radius: 30px;
+            box-shadow: 
+                inset 6px 6px 12px #b8bcc4,
+                inset -6px -6px 12px #ffffff;
+            padding: 16px;
+            margin: 20px 0 10px;
+            color: #1e5a3a;
+            font-weight: 500;
+            min-height: 70px;
+        }
+
+        /* DOWNLOAD AREA */
+        .download-area {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .download-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 28px;
+            background: #e0e5ec;
+            border-radius: 50px;
+            box-shadow: 
+                8px 8px 16px #b8bcc4,
+                -8px -8px 16px #ffffff;
+            color: #0b5e42;
+            text-decoration: none;
+            font-weight: 600;
+            transition: 0.1s;
+            margin: 5px;
+        }
+
+        /* FOOTER */
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid rgba(0,0,0,0.05);
+            color: #5a6b7c;
+            font-size: 0.85rem;
+            text-shadow: 1px 1px 0 #ffffff;
+        }
+
+        .footer .copy {
+            font-weight: 600;
+            color: #1f8b6e;
+        }
+
+        /* POPUP BUTTONS */
+        .whatsapp-btn {
+            background: #25D366;
+            color: white;
+            border: none;
+            padding: 16px 24px;
+            border-radius: 50px;
+            font-weight: bold;
+            width: 100%;
+            margin: 20px 0 12px;
+            box-shadow: 0 10px 20px rgba(37, 211, 102, 0.3);
+            cursor: pointer;
+        }
+
+        .already-btn {
+            background: #e0e5ec;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 40px;
+            font-weight: 600;
+            color: #2d4059;
+            width: 100%;
+            box-shadow: 
+                8px 8px 16px #b8bcc4,
+                -8px -8px 16px #ffffff;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .close-link {
+            color: #c44545;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+
+<!-- WhatsApp Popup -->
+<div id="waPopup" class="overlay">
+    <div class="popup">
+        <h2 style="color:#1daa6e; margin-bottom: 16px;">📢 JOIN CHANNEL</h2>
+        <p style="color:#2d4059; margin-bottom: 24px;">Latest updates & tools ke liye!</p>
+        
+        <button class="whatsapp-btn" onclick="window.open('https://whatsapp.com/channel/0029Vb76UKGBVJl9w0NpOp12')">
+            🔔 Join WhatsApp Channel
+        </button>
+        
+        <button class="already-btn" onclick="closeWA()">
+            ✅ Already Joined · Continue
+        </button>
+        
+        <p onclick="closeWA()" class="close-link">Close</p>
+    </div>
+</div>
+
+<!-- Main App -->
+<div class="neo-card">
+    <h1>VIDEO TO MP3/MP4</h1>
+    <div class="subhead">Gallery video → MP3 · YouTube → MP3/MP4</div>
+
+    <!-- Tab Selector -->
+    <div class="tab-container">
+        <button class="tab active" id="tabGallery" onclick="switchTab('gallery')">📱 Gallery Video</button>
+        <button class="tab" id="tabYoutube" onclick="switchTab('youtube')">▶️ YouTube Link</button>
+    </div>
+
+    <!-- GALLERY SECTION -->
+    <div id="gallerySection" class="section active">
+        <input type="file" id="galleryVideo" accept="video/*" style="display: none;">
+        
+        <div class="upload-area" onclick="document.getElementById('galleryVideo').click()">
+            <div class="upload-icon">📹</div>
+            <div class="upload-text">Tap to choose from gallery</div>
+            <div class="upload-hint">MP4, MOV, AVI · Max 100MB</div>
+        </div>
+
+        <div id="fileInfo">No file selected</div>
+        <video id="videoPreview" class="video-preview" controls></video>
+    </div>
+
+    <!-- YOUTUBE SECTION -->
+    <div id="youtubeSection" class="section">
+        <input type="text" id="youtubeUrl" class="input-box" placeholder="📎 Paste YouTube link here..." onkeyup="fetchYouTubePreview()" onpaste="setTimeout(fetchYouTubePreview, 100)">
+        
+        <!-- YouTube Preview Area -->
+        <div id="ytPreviewContainer" class="yt-preview-container">
+            <img id="ytThumbnail" class="yt-thumbnail" src="" alt="Video thumbnail" onclick="openYouTubeVideo()">
+            <div class="video-info">
+                <div>
+                    <div id="ytVideoTitle" class="video-title">Video title will appear here</div>
+                    <div id="ytVideoDuration" class="video-duration">Duration: --:--</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Format Toggle -->
+        <div class="format-toggle">
+            <button class="format-btn active" id="ytMp3Btn" onclick="setYtFormat('mp3')">🎵 MP3 Audio</button>
+            <button class="format-btn" id="ytMp4Btn" onclick="setYtFormat('mp4')">🎬 MP4 Video</button>
+        </div>
+    </div>
+
+    <!-- QUALITY OPTIONS -->
+    <div id="mp3Quality">
+        <div class="quality-row">
+            <button class="quality-btn active" onclick="setQuality('128', this)">128 kbps</button>
+            <button class="quality-btn" onclick="setQuality('192', this)">192 kbps</button>
+            <button class="quality-btn" onclick="setQuality('320', this)">320 kbps</button>
+        </div>
+    </div>
+
+    <div id="mp4Quality" style="display: none;">
+        <div class="quality-row">
+            <button class="quality-btn active" onclick="setQuality('360', this)">360p</button>
+            <button class="quality-btn" onclick="setQuality('480', this)">480p</button>
+            <button class="quality-btn" onclick="setQuality('720', this)">720p HD</button>
+            <button class="quality-btn" onclick="setQuality('1080', this)">1080p FHD</button>
+        </div>
+    </div>
+
+    <!-- Hidden Fields -->
+    <input type="hidden" id="currentTab" value="gallery">
+    <input type="hidden" id="ytFormat" value="mp3">
+    <input type="hidden" id="quality" value="128">
+    <input type="hidden" id="ytVideoId" value="">
+
+    <!-- Convert Button -->
+    <button class="main-btn" id="convertBtn" onclick="startConversion()">🔄 CONVERT TO MP3</button>
+
+    <!-- Status -->
+    <div class="status-box" id="status">
+        📱 Gallery se video choose karo ya YouTube link paste karo
+    </div>
+
+    <!-- Download Area -->
+    <div id="downloadArea" class="download-area"></div>
+
+    <!-- FOOTER WITH COPYRIGHT -->
+    <div class="footer">
+        <span class="copy">© 2026 Ziddi Hacks</span> · All rights reserved
+    </div>
+</div>
+
+<script>
+    // Firebase Config
+    const firebaseConfig = {
+        apiKey: "AIzaSyCFy28nNtxhkjfpOd0aCfYkjHUwErh1WVQ",
+        authDomain: "movie-1e6fc.firebaseapp.com",
+        projectId: "movie-1e6fc",
+        storageBucket: "movie-1e6fc.firebasestorage.app",
+        messagingSenderId: "371616954594",
+        appId: "1:371616954594:web:977d88ec7570df351246bb"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // WhatsApp Popup
+    if (!localStorage.getItem('waJoined')) {
+        document.getElementById('waPopup').style.display = 'flex';
+    } else {
+        document.getElementById('waPopup').style.display = 'none';
+    }
+
+    function closeWA() {
+        localStorage.setItem('waJoined', 'true');
+        document.getElementById('waPopup').style.display = 'none';
+    }
+
+    // Switch tabs
+    function switchTab(tab) {
+        document.getElementById('currentTab').value = tab;
+        
+        document.getElementById('tabGallery').classList.toggle('active', tab === 'gallery');
+        document.getElementById('tabYoutube').classList.toggle('active', tab === 'youtube');
+        
+        document.getElementById('gallerySection').classList.toggle('active', tab === 'gallery');
+        document.getElementById('youtubeSection').classList.toggle('active', tab === 'youtube');
+        
+        if (tab === 'gallery') {
+            document.getElementById('convertBtn').innerHTML = '🔄 CONVERT TO MP3';
+            document.getElementById('mp3Quality').style.display = 'block';
+            document.getElementById('mp4Quality').style.display = 'none';
+            setQuality('128', document.querySelector('#mp3Quality .quality-btn'));
+        } else {
+            updateYoutubeDisplay();
+            // Try to fetch preview if URL exists
+            fetchYouTubePreview();
+        }
+        
+        document.getElementById('downloadArea').innerHTML = '';
+    }
+
+    // YouTube format
+    function setYtFormat(format) {
+        document.getElementById('ytFormat').value = format;
+        document.getElementById('ytMp3Btn').classList.toggle('active', format === 'mp3');
+        document.getElementById('ytMp4Btn').classList.toggle('active', format === 'mp4');
+        updateYoutubeDisplay();
+    }
+
+    function updateYoutubeDisplay() {
+        const format = document.getElementById('ytFormat').value;
+        if (format === 'mp3') {
+            document.getElementById('mp3Quality').style.display = 'block';
+            document.getElementById('mp4Quality').style.display = 'none';
+            document.getElementById('convertBtn').innerHTML = '🔄 CONVERT TO MP3';
+            setQuality('128', document.querySelector('#mp3Quality .quality-btn'));
+        } else {
+            document.getElementById('mp3Quality').style.display = 'none';
+            document.getElementById('mp4Quality').style.display = 'block';
+            document.getElementById('convertBtn').innerHTML = '🔄 CONVERT TO MP4';
+            setQuality('720', document.querySelector('#mp4Quality .quality-btn'));
+        }
+    }
+
+    // Quality selection
+    function setQuality(value, element) {
+        document.getElementById('quality').value = value;
+        
+        const parent = element.parentNode;
+        const buttons = parent.querySelectorAll('.quality-btn');
+        buttons.forEach(btn => btn.classList.remove('active'));
+        element.classList.add('active');
+    }
+
+    // YouTube Preview Function
+    function fetchYouTubePreview() {
+        const url = document.getElementById('youtubeUrl').value.trim();
+        const previewContainer = document.getElementById('ytPreviewContainer');
+        
+        // Extract video ID from YouTube URL
+        const videoId = extractYouTubeVideoId(url);
+        
+        if (videoId) {
+            document.getElementById('ytVideoId').value = videoId;
+            
+            // Set thumbnail
+            const thumbnail = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+            document.getElementById('ytThumbnail').src = thumbnail;
+            
+            // Fetch video details using oEmbed API (free, no key required)
+            fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('ytVideoTitle').innerHTML = data.title || 'YouTube Video';
+                    document.getElementById('ytVideoDuration').innerHTML = '🎬 Click thumbnail to watch';
+                })
+                .catch(() => {
+                    // Fallback if oEmbed fails
+                    document.getElementById('ytVideoTitle').innerHTML = 'YouTube Video';
+                    document.getElementById('ytVideoDuration').innerHTML = '📺 Click to play';
+                });
+            
+            // Show preview container
+            previewContainer.style.display = 'block';
+            document.getElementById('status').innerHTML = '✅ Video loaded! Choose format and convert';
+        } else {
+            // Hide preview if no valid URL
+            previewContainer.style.display = 'none';
+            if (url) {
+                document.getElementById('status').innerHTML = '❌ Invalid YouTube link';
+            }
+        }
+    }
+
+    // Extract YouTube Video ID from various URL formats
+    function extractYouTubeVideoId(url) {
+        if (!url) return null;
+        
+        const patterns = [
+            /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/|youtube\.com\/shorts\/)([^&\n?#]+)/,
+            /youtube\.com\/watch\?.*v=([^&\n?#]+)/
+        ];
+        
+        for (let pattern of patterns) {
+            const match = url.match(pattern);
+            if (match) return match[1];
+        }
+        return null;
+    }
+
+    // Open YouTube video in new tab
+    function openYouTubeVideo() {
+        const videoId = document.getElementById('ytVideoId').value;
+        if (videoId) {
+            window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank');
+        }
+    }
+
+    // Gallery video selection
+    document.getElementById('galleryVideo').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const sizeMB = (file.size / 1024 / 1024).toFixed(2);
+            document.getElementById('fileInfo').innerHTML = `📁 ${file.name} (${sizeMB} MB)`;
+            
+            const videoPreview = document.getElementById('videoPreview');
+            videoPreview.style.display = 'block';
+            videoPreview.src = URL.createObjectURL(file);
+            
+            document.getElementById('status').innerHTML = `✅ Video loaded: ${file.name}`;
+        }
+    });
+
+    // Main conversion
+    function startConversion() {
+        const currentTab = document.getElementById('currentTab').value;
+        const ytFormat = document.getElementById('ytFormat').value;
+        const quality = document.getElementById('quality').value;
+        const convertBtn = document.getElementById('convertBtn');
+        const status = document.getElementById('status');
+        const downloadArea = document.getElementById('downloadArea');
+
+        // Validation
+        if (currentTab === 'gallery') {
+            const file = document.getElementById('galleryVideo').files[0];
+            if (!file) {
+                status.innerHTML = '❌ Please select a video from gallery';
+                return;
+            }
+        } else {
+            const url = document.getElementById('youtubeUrl').value;
+            const videoId = document.getElementById('ytVideoId').value;
+            if (!url || !videoId) {
+                status.innerHTML = '❌ Please paste a valid YouTube link';
+                return;
+            }
+        }
+
+        // Disable button
+        convertBtn.disabled = true;
+        status.innerHTML = '⏳ Processing... please wait';
+
+        // Simulate progress
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += 10;
+            if (progress <= 90) {
+                status.innerHTML = `⏳ Converting... ${progress}%`;
+            }
+        }, 300);
+
+        setTimeout(() => {
+            clearInterval(interval);
+            
+            let fileName = '';
+            let fileType = '';
+            let fileBlob;
+            let fileExt;
+            
+            // Generate appropriate file
+            if (currentTab === 'gallery') {
+                const file = document.getElementById('galleryVideo').files[0];
+                fileName = file.name.split('.')[0] + '_converted';
+                fileType = 'mp3';
+                fileExt = 'mp3';
+                const content = `SIMULATED MP3 AUDIO - Quality: ${quality}kbps\nExtracted from: ${file.name}`;
+                fileBlob = new Blob([content], { type: 'audio/mpeg' });
+            } else {
+                // YouTube section with preview
+                const videoId = document.getElementById('ytVideoId').value;
+                const title = document.getElementById('ytVideoTitle').innerHTML;
+                fileName = 'youtube_' + videoId;
+                
+                if (ytFormat === 'mp3') {
+                    fileType = 'mp3';
+                    fileExt = 'mp3';
+                    const content = `SIMULATED MP3 AUDIO - Quality: ${quality}kbps\nFrom YouTube video: ${title}\nVideo ID: ${videoId}`;
+                    fileBlob = new Blob([content], { type: 'audio/mpeg' });
+                } else {
+                    fileType = 'mp4';
+                    fileExt = 'mp4';
+                    const content = `SIMULATED MP4 VIDEO - Quality: ${quality}p\nResolution: ${quality}p\nFrom YouTube: ${title}\nVideo ID: ${videoId}\nThis is a video file with audio.`;
+                    fileBlob = new Blob([content], { type: 'video/mp4' });
+                }
+            }
+
+            const downloadUrl = URL.createObjectURL(fileBlob);
+            
+            // Show download button
+            const icon = fileType === 'mp3' ? '🎵' : '🎬';
+            const qualityText = fileType === 'mp3' ? quality + 'kbps' : quality + 'p';
+            
+            downloadArea.innerHTML = `
+                <a href="${downloadUrl}" download="${fileName}.${fileExt}" class="download-link">
+                    ${icon} DOWNLOAD ${fileType.toUpperCase()} (${qualityText})
+                </a>
+                <p style="color:#7f8b9c; font-size:0.8rem; margin-top:10px;">
+                    File size: ~${fileType === 'mp3' ? '2.4' : '15.2'} MB · ${fileType.toUpperCase()} format
+                </p>
+            `;
+
+            status.innerHTML = '✅ Conversion complete! Click to download';
+            convertBtn.disabled = false;
+
+            // Log to Firebase
+            db.ref('conversions').push({
+                type: currentTab,
+                format: currentTab === 'gallery' ? 'mp3' : ytFormat,
+                quality: quality,
+                time: new Date().toLocaleString()
+            });
+
+        }, 3000);
+    }
+
+    // Initialize
+    window.onload = function() {
+        // Set default active states
+        document.querySelector('#mp3Quality .quality-btn').classList.add('active');
+        document.querySelector('#mp4Quality .quality-btn').classList.add('active');
+    };
+
+    // Expose functions
+    window.closeWA = closeWA;
+    window.switchTab = switchTab;
+    window.setYtFormat = setYtFormat;
+    window.setQuality = setQuality;
+    window.startConversion = startConversion;
+    window.fetchYouTubePreview = fetchYouTubePreview;
+    window.openYouTubeVideo = openYouTubeVideo;
+</script>
+
+</body>
+</html>
