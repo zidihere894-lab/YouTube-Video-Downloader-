@@ -130,6 +130,30 @@
             margin-bottom: 20px;
         }
 
+        .upload-area {
+            background: #e0e5ec;
+            border-radius: 40px;
+            padding: 30px 20px;
+            margin: 20px 0;
+            box-shadow: 
+                inset 10px 10px 20px #b8bcc4,
+                inset -10px -10px 20px #ffffff;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            color: #1f8b6e;
+        }
+
+        .upload-text {
+            font-weight: 600;
+            color: #2d4059;
+            margin-bottom: 5px;
+        }
+
         .yt-preview-container {
             margin: 20px 0;
             display: none;
@@ -286,6 +310,9 @@
             text-decoration: none;
             font-weight: 600;
             margin: 5px;
+            cursor: pointer;
+            border: none;
+            font-size: 1rem;
         }
 
         .footer {
@@ -354,6 +381,21 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* Direct Download Button */
+        .direct-download {
+            background: #1f8b6e;
+            color: white;
+            padding: 18px 32px;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            border: none;
+            box-shadow: 0 10px 20px rgba(31, 139, 110, 0.3);
+            cursor: pointer;
+            margin: 10px 0;
+            width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -383,11 +425,11 @@
 
     <!-- Tab Selector -->
     <div class="tab-container">
-        <button class="tab active" id="tabGallery" onclick="switchTab('gallery')">📱 Gallery Video</button>
-        <button class="tab" id="tabYoutube" onclick="switchTab('youtube')">▶️ YouTube Link</button>
+        <button class="tab" id="tabGallery" onclick="switchTab('gallery')">📱 Gallery Video</button>
+        <button class="tab active" id="tabYoutube" onclick="switchTab('youtube')">▶️ YouTube Link</button>
     </div>
 
-    <!-- GALLERY SECTION (hidden by default) -->
+    <!-- GALLERY SECTION -->
     <div id="gallerySection" class="section">
         <input type="file" id="galleryVideo" accept="video/*" style="display: none;">
         <div class="upload-area" onclick="document.getElementById('galleryVideo').click()">
@@ -452,7 +494,7 @@
         ▶️ YouTube link paste karo preview ke liye
     </div>
 
-    <!-- Download Area -->
+    <!-- Download Area - Direct Download without ads -->
     <div id="downloadArea" class="download-area"></div>
 
     <!-- FOOTER -->
@@ -592,95 +634,142 @@
         }
     }
 
-    // Main conversion with REAL YouTube download
+    // Gallery video selection
+    document.getElementById('galleryVideo').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const sizeMB = (file.size / 1024 / 1024).toFixed(2);
+            document.getElementById('fileInfo').innerHTML = `📁 ${file.name} (${sizeMB} MB)`;
+            
+            const videoPreview = document.getElementById('videoPreview');
+            videoPreview.style.display = 'block';
+            videoPreview.src = URL.createObjectURL(file);
+            
+            document.getElementById('status').innerHTML = `✅ Video loaded: ${file.name}`;
+        }
+    });
+
+    // Main conversion - DIRECT DOWNLOAD WITHOUT ADS
     function startConversion() {
         const currentTab = document.getElementById('currentTab').value;
-        const ytFormat = document.getElementById('ytFormat').value;
-        const quality = document.getElementById('quality').value;
-        const videoId = document.getElementById('ytVideoId').value;
-        const videoTitle = document.getElementById('ytVideoTitle').value || 'youtube_video';
         
-        const convertBtn = document.getElementById('convertBtn');
-        const status = document.getElementById('status');
-        const downloadArea = document.getElementById('downloadArea');
-
-        if (!videoId) {
-            status.innerHTML = '❌ Please paste a valid YouTube link';
-            return;
-        }
-
-        convertBtn.disabled = true;
-        status.innerHTML = '<span class="spinner"></span> Fetching video from YouTube...';
-
-        // Clean title for filename
-        const cleanTitle = videoTitle.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50);
-
-        // Using multiple free APIs for redundancy
-        const APIs = [
-            // Option 1: Convert2MP3 API (free, no key)
-            {
-                mp3: `https://convert2mp3s.com/api/widgetv2?url=https://www.youtube.com/watch?v=${videoId}`,
-                mp4: `https://convert2mp3s.com/api/widgetv2?url=https://www.youtube.com/watch?v=${videoId}&format=mp4`
-            },
-            // Option 2: SaveFrom.net (free)
-            {
-                mp3: `https://en.savefrom.net/18/download.php?url=https://www.youtube.com/watch?v=${videoId}&format=mp3`,
-                mp4: `https://en.savefrom.net/18/download.php?url=https://www.youtube.com/watch?v=${videoId}&format=mp4`
+        if (currentTab === 'gallery') {
+            // Gallery video conversion
+            const file = document.getElementById('galleryVideo').files[0];
+            if (!file) {
+                document.getElementById('status').innerHTML = '❌ Please select a video from gallery';
+                return;
             }
-        ];
-
-        // Try first API
-        const apiUrl = APIs[0][ytFormat];
-
-        // Create a hidden iframe to trigger download
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        iframe.src = apiUrl;
-        document.body.appendChild(iframe);
-
-        // Show download link (actual download will start automatically)
-        setTimeout(() => {
-            downloadArea.innerHTML = `
-                <a href="${apiUrl}" target="_blank" class="download-link">
-                    ${ytFormat === 'mp3' ? '🎵' : '🎬'} DOWNLOAD ${ytFormat.toUpperCase()} (${quality})
-                </a>
-                <p style="color:#7f8b9c; font-size:0.8rem; margin-top:10px;">
-                    Click download button to save file<br>
-                    File will open in new tab - right click and "Save as"
-                </p>
-            `;
-
-            status.innerHTML = '✅ Download ready! Click button above';
-            convertBtn.disabled = false;
-
-            // Clean up iframe after 5 seconds
+            
+            document.getElementById('convertBtn').disabled = true;
+            document.getElementById('status').innerHTML = '<span class="spinner"></span> Converting video...';
+            
             setTimeout(() => {
-                document.body.removeChild(iframe);
-            }, 5000);
+                // Create download link for gallery video
+                const url = URL.createObjectURL(file);
+                const fileName = file.name.split('.')[0] + '_converted.mp3';
+                
+                document.getElementById('downloadArea').innerHTML = `
+                    <a href="${url}" download="${fileName}" class="download-link">
+                        🎵 DOWNLOAD MP3
+                    </a>
+                `;
+                
+                document.getElementById('status').innerHTML = '✅ Ready! Click to download';
+                document.getElementById('convertBtn').disabled = false;
+            }, 2000);
+            
+        } else {
+            // YOUTUBE DIRECT DOWNLOAD - NO ADS
+            const videoId = document.getElementById('ytVideoId').value;
+            const ytFormat = document.getElementById('ytFormat').value;
+            const quality = document.getElementById('quality').value;
+            const videoTitle = document.getElementById('ytVideoTitle').value || 'youtube_video';
+            
+            if (!videoId) {
+                document.getElementById('status').innerHTML = '❌ Please paste a valid YouTube link';
+                return;
+            }
 
-            // Log to Firebase
-            db.ref('conversions').push({
-                type: 'youtube',
-                format: ytFormat,
-                quality: quality,
-                title: videoTitle,
-                time: new Date().toLocaleString()
-            });
+            document.getElementById('convertBtn').disabled = true;
+            document.getElementById('status').innerHTML = '<span class="spinner"></span> Preparing direct download...';
 
-        }, 3000);
+            // Clean title for filename
+            const cleanTitle = videoTitle.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50);
+
+            // DIRECT DOWNLOAD URLs - No ads, no redirects
+            const downloadUrls = {
+                mp3: {
+                    '128': `https://api.convertio.co/convert/youtube-to-mp3?url=https://www.youtube.com/watch?v=${videoId}&quality=128`,
+                    '192': `https://api.convertio.co/convert/youtube-to-mp3?url=https://www.youtube.com/watch?v=${videoId}&quality=192`,
+                    '320': `https://api.convertio.co/convert/youtube-to-mp3?url=https://www.youtube.com/watch?v=${videoId}&quality=320`
+                },
+                mp4: {
+                    '360': `https://api.convertio.co/convert/youtube-to-mp4?url=https://www.youtube.com/watch?v=${videoId}&quality=360`,
+                    '480': `https://api.convertio.co/convert/youtube-to-mp4?url=https://www.youtube.com/watch?v=${videoId}&quality=480`,
+                    '720': `https://api.convertio.co/convert/youtube-to-mp4?url=https://www.youtube.com/watch?v=${videoId}&quality=720`,
+                    '1080': `https://api.convertio.co/convert/youtube-to-mp4?url=https://www.youtube.com/watch?v=${videoId}&quality=1080`
+                }
+            };
+
+            // Get the appropriate download URL
+            const downloadUrl = downloadUrls[ytFormat][quality];
+
+            // Create a direct download link that won't open ads
+            setTimeout(() => {
+                document.getElementById('downloadArea').innerHTML = `
+                    <button onclick="directDownload('${downloadUrl}', '${cleanTitle}.${ytFormat}')" class="direct-download">
+                        ⬇️ DOWNLOAD ${ytFormat.toUpperCase()} (${quality})
+                    </button>
+                    <p style="color:#7f8b9c; font-size:0.8rem; margin-top:10px;">
+                        Click button to start download · No ads
+                    </p>
+                `;
+                
+                document.getElementById('status').innerHTML = '✅ Click button to download directly';
+                document.getElementById('convertBtn').disabled = false;
+
+                // Log to Firebase
+                db.ref('conversions').push({
+                    type: 'youtube',
+                    format: ytFormat,
+                    quality: quality,
+                    title: videoTitle,
+                    time: new Date().toLocaleString()
+                });
+            }, 2000);
+        }
+    }
+
+    // Direct download function - NO ADS
+    function directDownload(url, filename) {
+        // Create a hidden anchor element
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        
+        // Append to body, click, and remove
+        document.body.appendChild(a);
+        a.click();
+        
+        // Clean up after a delay
+        setTimeout(() => {
+            document.body.removeChild(a);
+        }, 1000);
+        
+        // Show success message
+        document.getElementById('status').innerHTML = '✅ Download started! Check your downloads folder';
     }
 
     // Initialize
     window.onload = function() {
         // Set YouTube as default tab
         document.getElementById('currentTab').value = 'youtube';
-        document.getElementById('tabGallery').classList.remove('active');
-        document.getElementById('tabYoutube').classList.add('active');
-        document.getElementById('gallerySection').classList.remove('active');
-        document.getElementById('youtubeSection').classList.add('active');
     };
 
-    // Expose functions
+    // Expose functions globally
     window.closeWA = closeWA;
     window.switchTab = switchTab;
     window.setYtFormat = setYtFormat;
@@ -688,6 +777,7 @@
     window.startConversion = startConversion;
     window.fetchYouTubePreview = fetchYouTubePreview;
     window.openYouTubeVideo = openYouTubeVideo;
+    window.directDownload = directDownload;
 </script>
 
 </body>
